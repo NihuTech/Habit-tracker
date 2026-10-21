@@ -126,8 +126,8 @@ export function TaskForm({ initial, submitLabel, onSubmit, onCancel }: TaskFormP
         />
       </label>
 
-      <div className="form-row">
-        <label className="field grow">
+      <div className="form-grid-2">
+        <label className="field">
           <span>Duration</span>
           <input
             type="number"
@@ -177,8 +177,8 @@ export function TaskForm({ initial, submitLabel, onSubmit, onCancel }: TaskFormP
           />
         </label>
       ) : (
-        <div className="form-row">
-          <label className="field grow">
+        <div className="form-grid-2">
+          <label className="field">
             <span>Start date</span>
             <input
               type="date"
@@ -187,7 +187,7 @@ export function TaskForm({ initial, submitLabel, onSubmit, onCancel }: TaskFormP
               required
             />
           </label>
-          <label className="field grow">
+          <label className="field">
             <span>End date (optional)</span>
             <input
               type="date"

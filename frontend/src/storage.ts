@@ -1,8 +1,7 @@
 import { dateKey } from './schedule'
-import type { DurationUnit, Frequency, Reminder, StreakState, Task } from './types'
+import type { DurationUnit, Frequency, Reminder, Task } from './types'
 
 export const TASKS_KEY = 'habit-tracker.tasks'
-export const STREAK_KEY = 'habit-tracker.streak'
 export const REMINDERS_KEY = 'habit-tracker.reminders'
 
 function asString(value: unknown, fallback = '') {
@@ -125,16 +124,6 @@ export function loadTasks(): Task[] {
     )
   } catch {
     return starterTasks(today)
-  }
-}
-
-export function loadStreak(): StreakState {
-  const raw = localStorage.getItem(STREAK_KEY)
-  if (!raw) return { count: 0, lastCompleteDate: null }
-  try {
-    return JSON.parse(raw) as StreakState
-  } catch {
-    return { count: 0, lastCompleteDate: null }
   }
 }
 

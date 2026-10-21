@@ -167,3 +167,51 @@ export function defaultWeekdays(frequency: Frequency) {
   if (frequency === 'custom') return [1, 3]
   return []
 }
+
+export function computeStreak(tasks: Task[], today: string): number {
+  if (!tasks.length) return 0
+
+  let earliestStartDate = ''
+  for (const task of tasks) {
+    const s =
+      task.frequency === 'one-time'
+        ? (task.oneTimeDate ?? task.startDate)
+        : task.startDate
+    if (s && (!earliestStartDate || s < earliestStartDate)) {
+      earliestStartDate = s
+    }
+  }
+  if (!earliestStartDate) return 0
+
+  function getDayStatus(d: string): 'complete' | 'empty' | 'incomplete' {
+    const scheduled = tasks.filter((t) => isScheduledOn(t, d))
+    if (scheduled.length === 0) return 'empty'
+    return scheduled.every((t) => isCompletedOn(t, d)) ? 'complete' : 'incomplete'
+  }
+
+  let count = 0
+
+  // Today counts if complete. If today isn't complete yet, it does not break the streak.
+  const todayStatus = getDayStatus(today)
+  if (todayStatus === 'complete') {
+    count += 1
+  }
+
+  // Count back from yesterday down to earliestStartDate
+  let checkDate = addDays(today, -1)
+  while (checkDate >= earliestStartDate) {
+    const status = getDayStatus(checkDate)
+    if (status === 'complete') {
+      count += 1
+      checkDate = addDays(checkDate, -1)
+    } else if (status === 'empty') {
+      // A day with no scheduled tasks is skipped: it neither adds to the streak nor breaks it.
+      checkDate = addDays(checkDate, -1)
+    } else {
+      // Incomplete day breaks the streak.
+      break
+    }
+  }
+
+  return count
+}

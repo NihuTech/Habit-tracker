@@ -21,7 +21,7 @@ import { AuthPage } from './AuthPage'
 import { CalendarHeatmapPopover } from './CalendarHeatmapPopover'
 import { RecoveryPrompt } from './RecoveryPrompt'
 import {
-  addDays,
+  computeStreak,
   dateKey,
   durationToSeconds,
   findMissedOccurrences,
@@ -37,9 +37,7 @@ import {
 } from './schedule'
 import {
   loadReminders,
-  loadStreak,
   REMINDERS_KEY,
-  STREAK_KEY,
 } from './storage'
 import { TaskForm, taskToDraft } from './TaskForm'
 import type { TaskDraft } from './TaskForm'
@@ -114,7 +112,6 @@ function App() {
         setAuthChecking(false)
       })
   }, [])
-  const [streak, setStreak] = useState(loadStreak)
   const [reminders, setReminders] = useState<Reminder[]>(loadReminders)
   const [reminderBanner, setReminderBanner] = useState('')
   const [formMode, setFormMode] = useState<'closed' | 'add' | 'edit'>('closed')
@@ -174,6 +171,10 @@ function App() {
     isCompletedOn(task, realToday),
   ).length
   const allDone = todayTasks.length > 0 && todayCompleted === todayTasks.length
+  const streakCount = useMemo(
+    () => computeStreak(tasks, realToday),
+    [tasks, realToday],
+  )
   const activeTask = tasks.find((task) => task.id === activeTaskId) ?? null
   const missed = useMemo(
     () => findMissedOccurrences(tasks, realToday),
@@ -188,9 +189,6 @@ function App() {
     null
   const editingTask = tasks.find((task) => task.id === editingId)
 
-  useEffect(() => {
-    localStorage.setItem(STREAK_KEY, JSON.stringify(streak))
-  }, [streak])
 
   useEffect(() => {
     localStorage.setItem(REMINDERS_KEY, JSON.stringify(reminders))
@@ -239,19 +237,6 @@ function App() {
     return () => timeouts.forEach((timeout) => window.clearTimeout(timeout))
   }, [reminders])
 
-  function updateStreakFrom(nextTasks: Task[]) {
-    const scheduledToday = nextTasks.filter((task) => isScheduledOn(task, realToday))
-    const done =
-      scheduledToday.length > 0 &&
-      scheduledToday.every((task) => isCompletedOn(task, realToday))
-    if (!done) return
-    setStreak((current) => {
-      if (current.lastCompleteDate === realToday) return current
-      const yesterday = addDays(realToday, -1)
-      const nextCount = current.lastCompleteDate === yesterday ? current.count + 1 : 1
-      return { count: nextCount, lastCompleteDate: realToday }
-    })
-  }
 
   async function toggleTask(id: string) {
     if (viewDate > realToday) return
@@ -268,7 +253,6 @@ function App() {
       }
       const nextTasks = tasks.map((t) => (t.id === id ? updatedTask : t))
       setTasks(nextTasks)
-      updateStreakFrom(nextTasks)
     } catch (err) {
       setErrorMessage((err as Error).message)
     }
@@ -279,7 +263,6 @@ function App() {
       await deleteHabit(id)
       const nextTasks = tasks.filter((task) => task.id !== id && task.parentId !== id)
       setTasks(nextTasks)
-      updateStreakFrom(nextTasks)
       if (activeTaskId === id) {
         setActiveTaskId(null)
         setTimerRunning(false)
@@ -337,7 +320,6 @@ function App() {
         const updated = await updateHabit(editingTask.id, payload)
         const nextTasks = tasks.map((t) => (t.id === editingTask.id ? updated : t))
         setTasks(nextTasks)
-        updateStreakFrom(nextTasks)
       } else {
         const payload = {
           title: draft.title,
@@ -356,7 +338,6 @@ function App() {
         const created = await createHabit(payload)
         const nextTasks = [...tasks, created]
         setTasks(nextTasks)
-        updateStreakFrom(nextTasks)
       }
       setFormMode('closed')
       setEditingId(null)
@@ -438,7 +419,6 @@ function App() {
       }
       const nextTasks = [...tasks, ...createdSteps]
       setTasks(nextTasks)
-      updateStreakFrom(nextTasks)
     } catch (err) {
       setErrorMessage((err as Error).message)
     }
@@ -779,7 +759,7 @@ function App() {
                 width="1em"
                 height="1em"
                 viewBox="0 0 24 24"
-                fill={streak.count > 0 ? '#f97316' : '#9ca3af'}
+                fill={streakCount > 0 ? '#f97316' : '#9ca3af'}
                 aria-hidden="true"
               >
                 <path
@@ -788,7 +768,7 @@ function App() {
                   d="M12.963 2.286a.75.75 0 0 0-1.071-.136 9.742 9.742 0 0 0-3.539 6.177A7.547 7.547 0 0 1 6.648 6.61a.75.75 0 0 0-1.152-.082A9 9 0 1 0 15.68 4.534a7.46 7.46 0 0 1-2.717-2.248zM15.75 14.25a3.75 3.75 0 1 1-7.313-1.172c.628.465 1.35.81 2.133 1a5.99 5.99 0 0 1 1.925-3.545 3.75 3.75 0 0 1 3.255 3.717z"
                 />
               </svg>
-              <span>{streak.count}</span>
+              <span>{streakCount}</span>
             </p>
             <p className="streak-note">
               {allDone
@@ -800,22 +780,28 @@ function App() {
           <article className="card side-card">
             <p className="eyebrow">Focus timer</p>
             <p className="timer-display">{formatTimer(secondsLeft)}</p>
-            <div className="form-row" style={{ marginBottom: 12 }}>
-              <input
-                type="number"
-                min={1}
-                value={timerValue}
-                onChange={(event) => setTimerValue(Number(event.target.value))}
-                aria-label="Timer length"
-              />
-              <select
-                value={timerUnit}
-                onChange={(event) => setTimerUnit(event.target.value as DurationUnit)}
-                aria-label="Timer unit"
-              >
-                <option value="minutes">Minutes</option>
-                <option value="hours">Hours</option>
-              </select>
+            <div className="form-grid-2" style={{ marginBottom: 12 }}>
+              <label className="field">
+                <span>Duration</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={timerValue}
+                  onChange={(event) => setTimerValue(Number(event.target.value))}
+                  aria-label="Timer length"
+                />
+              </label>
+              <label className="field">
+                <span>Unit</span>
+                <select
+                  value={timerUnit}
+                  onChange={(event) => setTimerUnit(event.target.value as DurationUnit)}
+                  aria-label="Timer unit"
+                >
+                  <option value="minutes">Minutes</option>
+                  <option value="hours">Hours</option>
+                </select>
+              </label>
             </div>
             {timerError ? <p className="form-error">{timerError}</p> : null}
             <div className="timer-controls">
