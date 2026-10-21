@@ -1,7 +1,7 @@
 import type { DurationUnit, Frequency, RecoveryRecord, Task } from './types'
 
-// Default to backend port 5000 (as configured in backend-java/src/main/resources/application.properties)
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:5000/api'
+// Default to backend port 8080 (fallback to 5000 if 8080 not set)
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080/api'
 export const DEFAULT_USER_ID = 'user-001'
 
 export interface ApiResponse<T> {

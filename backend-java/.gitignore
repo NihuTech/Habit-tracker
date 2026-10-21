@@ -1,0 +1,10 @@
+# Maven build output
+target/
+
+# H2 file-mode database files (legacy; no longer used by default)
+data/
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store

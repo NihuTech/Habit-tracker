@@ -1,0 +1,40 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2026-10-22T00:21:46.833+05:30  INFO 60889 --- [habit-tracker] [           main] c.habittracker.HabitTrackerApplication   : Starting HabitTrackerApplication v1.0.0 using Java 17.0.20.1 with PID 60889 (/home/manpra/Documents/Nerd Stuff/Projects/Habit-tracker/backend-java/target/backend-java-1.0.0.jar started by manpra in /home/manpra/Documents/Nerd Stuff/Projects/Habit-tracker/backend-java)
+2026-10-22T00:21:46.837+05:30  INFO 60889 --- [habit-tracker] [           main] c.habittracker.HabitTrackerApplication   : No active profile set, falling back to 1 default profile: "default"
+2026-10-22T00:21:47.348+05:30  INFO 60889 --- [habit-tracker] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-22T00:21:47.397+05:30  INFO 60889 --- [habit-tracker] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 43 ms. Found 4 JPA repository interfaces.
+2026-10-22T00:21:47.786+05:30  INFO 60889 --- [habit-tracker] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 5000 (http)
+2026-10-22T00:21:47.788+05:30  INFO 60889 --- [habit-tracker] [           main] o.a.catalina.core.AprLifecycleListener   : Loaded Apache Tomcat Native library [2.0.15] using APR version [1.7.6].
+2026-10-22T00:21:47.790+05:30  INFO 60889 --- [habit-tracker] [           main] o.a.catalina.core.AprLifecycleListener   : OpenSSL successfully initialized [OpenSSL 3.5.9 29 Sep 2026]
+2026-10-22T00:21:47.798+05:30  INFO 60889 --- [habit-tracker] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-22T00:21:47.798+05:30  INFO 60889 --- [habit-tracker] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-10-22T00:21:47.821+05:30  INFO 60889 --- [habit-tracker] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-22T00:21:47.822+05:30  INFO 60889 --- [habit-tracker] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 936 ms
+2026-10-22T00:21:47.845+05:30  INFO 60889 --- [habit-tracker] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-22T00:21:48.045+05:30  INFO 60889 --- [habit-tracker] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:file:./data/habits user=SA
+2026-10-22T00:21:48.047+05:30  INFO 60889 --- [habit-tracker] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-22T00:21:48.061+05:30  INFO 60889 --- [habit-tracker] [           main] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:file:./data/habits'
+2026-10-22T00:21:48.180+05:30  INFO 60889 --- [habit-tracker] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-22T00:21:48.223+05:30  INFO 60889 --- [habit-tracker] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.3.Final
+2026-10-22T00:21:48.248+05:30  INFO 60889 --- [habit-tracker] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-22T00:21:48.439+05:30  INFO 60889 --- [habit-tracker] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-22T00:21:48.468+05:30  WARN 60889 --- [habit-tracker] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-10-22T00:21:49.133+05:30  INFO 60889 --- [habit-tracker] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-22T00:21:49.182+05:30  INFO 60889 --- [habit-tracker] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-22T00:21:49.627+05:30  WARN 60889 --- [habit-tracker] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-22T00:21:49.853+05:30  INFO 60889 --- [habit-tracker] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 5000 (http) with context path '/'
+2026-10-22T00:21:49.863+05:30  INFO 60889 --- [habit-tracker] [           main] c.habittracker.HabitTrackerApplication   : Started HabitTrackerApplication in 3.293 seconds (process running for 3.613)
+2026-10-22T00:21:50.025+05:30  INFO 60889 --- [habit-tracker] [           main] com.habittracker.seed.DatabaseSeeder     : Database is empty. Seeding initial demo users, habits, completions, and recoveries...
+2026-10-22T00:21:50.079+05:30  INFO 60889 --- [habit-tracker] [           main] com.habittracker.seed.DatabaseSeeder     : Database seeding successfully completed.
+2026-10-22T00:21:54.302+05:30  INFO 60889 --- [habit-tracker] [nio-5000-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-22T00:21:54.302+05:30  INFO 60889 --- [habit-tracker] [nio-5000-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-22T00:21:54.303+05:30  INFO 60889 --- [habit-tracker] [nio-5000-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms

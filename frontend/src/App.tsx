@@ -1,5 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import './App.css'
+import {
+  createHabit,
+  deleteHabit,
+  getHabits,
+  recordCompletion,
+  recordRecovery,
+  removeCompletion,
+  updateHabit,
+} from './api'
 import { RecoveryPrompt } from './RecoveryPrompt'
 import {
   addDays,
@@ -19,10 +28,8 @@ import {
 import {
   loadReminders,
   loadStreak,
-  loadTasks,
   REMINDERS_KEY,
   STREAK_KEY,
-  TASKS_KEY,
 } from './storage'
 import { TaskForm, taskToDraft } from './TaskForm'
 import type { TaskDraft } from './TaskForm'
@@ -48,34 +55,12 @@ function emptyDraft(today: string): TaskDraft {
   }
 }
 
-function draftToTask(draft: TaskDraft, existing?: Task): Task {
-  const startDate =
-    draft.frequency === 'one-time' ? draft.oneTimeDate : draft.startDate
-  return {
-    id: existing?.id ?? crypto.randomUUID(),
-    title: draft.title,
-    notes: draft.notes,
-    durationValue: draft.durationValue,
-    durationUnit: draft.durationUnit,
-    frequency: draft.frequency,
-    startDate,
-    endDate: draft.endDate || null,
-    oneTimeDate: draft.frequency === 'one-time' ? draft.oneTimeDate : null,
-    weekdays:
-      draft.frequency === 'weekly' || draft.frequency === 'custom'
-        ? draft.weekdays
-        : [],
-    extraDates: existing?.extraDates ?? [],
-    completions: existing?.completions ?? {},
-    recoveries: existing?.recoveries ?? {},
-    parentId: existing?.parentId,
-  }
-}
-
 function App() {
   const realToday = dateKey()
   const [viewDate, setViewDate] = useState(realToday)
-  const [tasks, setTasks] = useState<Task[]>(loadTasks)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
   const [streak, setStreak] = useState(loadStreak)
   const [reminders, setReminders] = useState<Reminder[]>(loadReminders)
   const [reminderBanner, setReminderBanner] = useState('')
@@ -89,6 +74,23 @@ function App() {
   const [timerValue, setTimerValue] = useState(15)
   const [timerUnit, setTimerUnit] = useState<DurationUnit>('minutes')
   const [timerError, setTimerError] = useState('')
+
+  const fetchTasks = useCallback(async () => {
+    setIsLoading(true)
+    setErrorMessage('')
+    try {
+      const fetched = await getHabits()
+      setTasks(fetched)
+    } catch (err) {
+      setErrorMessage((err as Error).message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchTasks()
+  }, [fetchTasks])
 
   const now = new Date()
   const hour = now.getHours()
@@ -127,10 +129,6 @@ function App() {
     }) ??
     null
   const editingTask = tasks.find((task) => task.id === editingId)
-
-  useEffect(() => {
-    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks))
-  }, [tasks])
 
   useEffect(() => {
     localStorage.setItem(STREAK_KEY, JSON.stringify(streak))
@@ -197,31 +195,39 @@ function App() {
     })
   }
 
-  function updateTasks(next: Task[]) {
-    setTasks(next)
-    updateStreakFrom(next)
-  }
-
-  function updateTask(id: string, updater: (task: Task) => Task) {
-    updateTasks(tasks.map((task) => (task.id === id ? updater(task) : task)))
-  }
-
-  function toggleTask(id: string) {
+  async function toggleTask(id: string) {
     if (viewDate > realToday) return
-    updateTask(id, (task) => ({
-      ...task,
-      completions: {
-        ...task.completions,
-        [viewDate]: !isCompletedOn(task, viewDate),
-      },
-    }))
+    const currentTask = tasks.find((t) => t.id === id)
+    if (!currentTask) return
+    const isCompleted = isCompletedOn(currentTask, viewDate)
+
+    try {
+      let updatedTask: Task
+      if (isCompleted) {
+        updatedTask = await removeCompletion(id, viewDate)
+      } else {
+        updatedTask = await recordCompletion(id, viewDate, realToday)
+      }
+      const nextTasks = tasks.map((t) => (t.id === id ? updatedTask : t))
+      setTasks(nextTasks)
+      updateStreakFrom(nextTasks)
+    } catch (err) {
+      setErrorMessage((err as Error).message)
+    }
   }
 
-  function removeTask(id: string) {
-    updateTasks(tasks.filter((task) => task.id !== id && task.parentId !== id))
-    if (activeTaskId === id) {
-      setActiveTaskId(null)
-      setTimerRunning(false)
+  async function removeTask(id: string) {
+    try {
+      await deleteHabit(id)
+      const nextTasks = tasks.filter((task) => task.id !== id && task.parentId !== id)
+      setTasks(nextTasks)
+      updateStreakFrom(nextTasks)
+      if (activeTaskId === id) {
+        setActiveTaskId(null)
+        setTimerRunning(false)
+      }
+    } catch (err) {
+      setErrorMessage((err as Error).message)
     }
   }
 
@@ -253,64 +259,131 @@ function App() {
     setTimerError('')
   }
 
-  function saveTask(draft: TaskDraft) {
-    if (formMode === 'edit' && editingTask) {
-      updateTask(editingTask.id, (task) => draftToTask(draft, task))
-    } else {
-      updateTasks([...tasks, draftToTask(draft)])
+  async function saveTask(draft: TaskDraft) {
+    try {
+      if (formMode === 'edit' && editingTask) {
+        const payload = {
+          title: draft.title,
+          notes: draft.notes,
+          durationValue: draft.durationValue,
+          durationUnit: draft.durationUnit,
+          frequency: draft.frequency,
+          startDate: draft.frequency === 'one-time' ? draft.oneTimeDate : draft.startDate,
+          endDate: draft.endDate || null,
+          oneTimeDate: draft.frequency === 'one-time' ? draft.oneTimeDate : null,
+          weekdays:
+            draft.frequency === 'weekly' || draft.frequency === 'custom'
+              ? draft.weekdays
+              : [],
+        }
+        const updated = await updateHabit(editingTask.id, payload)
+        const nextTasks = tasks.map((t) => (t.id === editingTask.id ? updated : t))
+        setTasks(nextTasks)
+        updateStreakFrom(nextTasks)
+      } else {
+        const payload = {
+          title: draft.title,
+          notes: draft.notes,
+          durationValue: draft.durationValue,
+          durationUnit: draft.durationUnit,
+          frequency: draft.frequency,
+          startDate: draft.frequency === 'one-time' ? draft.oneTimeDate : draft.startDate,
+          endDate: draft.endDate || null,
+          oneTimeDate: draft.frequency === 'one-time' ? draft.oneTimeDate : null,
+          weekdays:
+            draft.frequency === 'weekly' || draft.frequency === 'custom'
+              ? draft.weekdays
+              : [],
+        }
+        const created = await createHabit(payload)
+        const nextTasks = [...tasks, created]
+        setTasks(nextTasks)
+        updateStreakFrom(nextTasks)
+      }
+      setFormMode('closed')
+      setEditingId(null)
+    } catch (err) {
+      setErrorMessage((err as Error).message)
     }
-    setFormMode('closed')
-    setEditingId(null)
   }
 
-  function saveRecovery(occurrence: MissedOccurrence, record: RecoveryRecord) {
-    updateTask(occurrence.task.id, (task) => ({
-      ...task,
-      recoveries: { ...task.recoveries, [occurrence.date]: record },
-    }))
-    setReviewing(null)
+  async function saveRecovery(occurrence: MissedOccurrence, record: RecoveryRecord) {
+    try {
+      const updated = await recordRecovery(occurrence.task.id, {
+        date: occurrence.date,
+        reason: record.reason ?? 'something-else',
+        explanation: record.explanation,
+        adjustment: record.adjustment,
+        actionTaken: record.actionTaken,
+        promptShown: record.promptShown,
+        handled: record.handled,
+        referenceDate: realToday,
+      })
+      const nextTasks = tasks.map((t) => (t.id === occurrence.task.id ? updated : t))
+      setTasks(nextTasks)
+      setReviewing(null)
+    } catch (err) {
+      setErrorMessage((err as Error).message)
+    }
   }
 
-  function reschedule(occurrence: MissedOccurrence, date: string) {
-    updateTask(occurrence.task.id, (task) => {
+  async function reschedule(occurrence: MissedOccurrence, date: string) {
+    try {
+      const task = occurrence.task
+      let payload
       if (task.frequency === 'one-time') {
-        return { ...task, oneTimeDate: date, startDate: date }
-      }
-      return {
-        ...task,
-        extraDates: task.extraDates.includes(date)
+        payload = { oneTimeDate: date, startDate: date }
+      } else {
+        const extraDates = task.extraDates.includes(date)
           ? task.extraDates
-          : [...task.extraDates, date],
+          : [...task.extraDates, date]
+        payload = { extraDates }
       }
-    })
+      const updated = await updateHabit(task.id, payload)
+      const nextTasks = tasks.map((t) => (t.id === task.id ? updated : t))
+      setTasks(nextTasks)
+    } catch (err) {
+      setErrorMessage((err as Error).message)
+    }
   }
 
-  function shorterVersion(occurrence: MissedOccurrence, minutes: number) {
-    updateTask(occurrence.task.id, (task) => ({
-      ...task,
-      durationValue: minutes,
-      durationUnit: 'minutes',
-    }))
-  }
-
-  function breakIntoSteps(occurrence: MissedOccurrence, steps: string[]) {
-    const newTasks = steps.map((step, index) =>
-      draftToTask({
-        title: `${occurrence.task.title}: ${step}`,
-        notes: `Smaller step ${index + 1} from a missed habit.`,
-        durationValue: 5,
+  async function shorterVersion(occurrence: MissedOccurrence, minutes: number) {
+    try {
+      const updated = await updateHabit(occurrence.task.id, {
+        durationValue: minutes,
         durationUnit: 'minutes',
-        frequency: 'one-time',
-        startDate: realToday,
-        endDate: '',
-        oneTimeDate: realToday,
-        weekdays: [],
-      }),
-    )
-    newTasks.forEach((task) => {
-      task.parentId = occurrence.task.id
-    })
-    updateTasks([...tasks, ...newTasks])
+      })
+      const nextTasks = tasks.map((t) => (t.id === occurrence.task.id ? updated : t))
+      setTasks(nextTasks)
+    } catch (err) {
+      setErrorMessage((err as Error).message)
+    }
+  }
+
+  async function breakIntoSteps(occurrence: MissedOccurrence, steps: string[]) {
+    try {
+      const createdSteps: Task[] = []
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i]
+        const stepTask = await createHabit({
+          title: `${occurrence.task.title}: ${step}`,
+          notes: `Smaller step ${i + 1} from a missed habit.`,
+          durationValue: 5,
+          durationUnit: 'minutes',
+          frequency: 'one-time',
+          startDate: realToday,
+          endDate: null,
+          oneTimeDate: realToday,
+          weekdays: [],
+        })
+        createdSteps.push(stepTask)
+      }
+      const nextTasks = [...tasks, ...createdSteps]
+      setTasks(nextTasks)
+      updateStreakFrom(nextTasks)
+    } catch (err) {
+      setErrorMessage((err as Error).message)
+    }
   }
 
   function setReminder(occurrence: MissedOccurrence, isoLocal: string) {
@@ -342,10 +415,29 @@ function App() {
 
   return (
     <div className="app-shell">
+      {errorMessage ? (
+        <div className="empty-state" style={{ marginBottom: 20 }}>
+          <p>{errorMessage}</p>
+          <button
+            type="button"
+            className="ghost-btn"
+            style={{ marginTop: 8 }}
+            onClick={() => void fetchTasks()}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
       {reminderBanner ? (
-        <div className="reminder-banner">
+        <div className="empty-state" style={{ marginBottom: 20 }}>
           <span>{reminderBanner}</span>
-          <button type="button" className="text-btn" onClick={() => setReminderBanner('')}>
+          <button
+            type="button"
+            className="ghost-btn"
+            style={{ marginLeft: 12 }}
+            onClick={() => setReminderBanner('')}
+          >
             Dismiss
           </button>
         </div>
@@ -427,10 +519,10 @@ function App() {
                 missed={autoRecovery}
                 existing={autoRecovery.task.recoveries[autoRecovery.date]}
                 onClose={() => setReviewing(null)}
-                onSave={(record) => saveRecovery(autoRecovery, record)}
-                onReschedule={(date) => reschedule(autoRecovery, date)}
-                onShorterVersion={(minutes) => shorterVersion(autoRecovery, minutes)}
-                onBreakIntoSteps={(steps) => breakIntoSteps(autoRecovery, steps)}
+                onSave={(record) => void saveRecovery(autoRecovery, record)}
+                onReschedule={(date) => void reschedule(autoRecovery, date)}
+                onShorterVersion={(minutes) => void shorterVersion(autoRecovery, minutes)}
+                onBreakIntoSteps={(steps) => void breakIntoSteps(autoRecovery, steps)}
                 onSetReminder={(value) => setReminder(autoRecovery, value)}
                 onStartFocus={(minutes) => startTimerFor(autoRecovery.task, minutes)}
               />
@@ -486,7 +578,7 @@ function App() {
                 key={formMode === 'edit' ? editingId ?? 'edit' : 'add'}
                 initial={formInitial}
                 submitLabel={formMode === 'edit' ? 'Save changes' : 'Save task'}
-                onSubmit={saveTask}
+                onSubmit={(draft) => void saveTask(draft)}
                 onCancel={() => {
                   setFormMode('closed')
                   setEditingId(null)
@@ -494,7 +586,9 @@ function App() {
               />
             ) : null}
 
-            {visibleTasks.length === 0 ? (
+            {isLoading ? (
+              <p className="empty-state">Loading tasks...</p>
+            ) : visibleTasks.length === 0 ? (
               <p className="empty-state">No tasks scheduled for this day.</p>
             ) : (
               <div className="task-list">
@@ -512,7 +606,7 @@ function App() {
                         type="checkbox"
                         checked={done}
                         disabled={viewDate > realToday}
-                        onChange={() => toggleTask(task.id)}
+                        onChange={() => void toggleTask(task.id)}
                         aria-label={`Mark ${task.title} complete`}
                       />
                       <div>
@@ -535,7 +629,7 @@ function App() {
                             {recovery?.handled ? (
                               <button
                                 type="button"
-                                className="text-btn"
+                                className="ghost-btn"
                                 onClick={() => setReviewing({ task, date: viewDate })}
                               >
                                 Revisit recovery suggestion
@@ -577,7 +671,7 @@ function App() {
                         <button
                           type="button"
                           className="icon-btn"
-                          onClick={() => removeTask(task.id)}
+                          onClick={() => void removeTask(task.id)}
                           aria-label={`Remove ${task.title}`}
                         >
                           ✕
