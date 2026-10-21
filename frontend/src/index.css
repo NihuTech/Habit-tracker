@@ -1,0 +1,61 @@
+:root {
+  --lavender-50: #f7f4fc;
+  --lavender-100: #eee8f8;
+  --lavender-200: #ddd2f3;
+  --lavender-400: #a78bfa;
+  --lavender-500: #7c6cf6;
+  --lavender-600: #6a57e8;
+  --ink: #2f2850;
+  --muted: #7a7196;
+  --card: #ffffff;
+  --border: #e8e0f4;
+  --success: #3dba8b;
+  --shadow: 0 12px 30px rgba(124, 108, 246, 0.12);
+  --sans: 'Nunito', system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--lavender-50);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  width: 100%;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
