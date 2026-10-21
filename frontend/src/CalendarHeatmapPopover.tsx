@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   dateKey,
   isCompletedOn,
@@ -22,11 +22,27 @@ export function CalendarHeatmapPopover({
   onSelectDate,
   onClose,
 }: CalendarHeatmapPopoverProps) {
-  // Local month/year view state initialized to selectedDate
+  // Local month/year view state initialised to the selected date
   const [viewDate, setViewDate] = useState(() => {
     const d = parseDateKey(selectedDate)
     return { year: d.getFullYear(), month: d.getMonth() }
   })
+
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  // Close on Escape
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  // Focus the card when it mounts so Escape works without a click first
+  useEffect(() => {
+    cardRef.current?.focus()
+  }, [])
 
   function prevMonth() {
     setViewDate((cur) => {
@@ -50,17 +66,15 @@ export function CalendarHeatmapPopover({
     }).format(d)
   }, [viewDate])
 
-  // Generate grid for Monday-start calendar
+  // Generate Monday-first grid
   const calendarDays = useMemo(() => {
     const firstDay = new Date(viewDate.year, viewDate.month, 1)
     const daysInMonth = new Date(viewDate.year, viewDate.month + 1, 0).getDate()
-
-    // getDay(): 0 is Sunday, 1 is Monday ... 6 is Saturday
-    // Convert to Monday = 0 ... Sunday = 6
+    // getDay(): 0=Sunday → convert to Mon=0 … Sun=6
     const firstDayIndex = (firstDay.getDay() + 6) % 7
 
     const cells: Array<{
-      dateKeyString: string
+      key: string
       dayNum: number
       isCurrentMonth: boolean
       heatLevel: 0 | 1 | 2 | 3
@@ -68,49 +82,26 @@ export function CalendarHeatmapPopover({
       isSelected: boolean
     }> = []
 
-    // Empty cells before first day of month
     for (let i = 0; i < firstDayIndex; i++) {
-      cells.push({
-        dateKeyString: `empty-${i}`,
-        dayNum: 0,
-        isCurrentMonth: false,
-        heatLevel: 0,
-        isToday: false,
-        isSelected: false,
-      })
+      cells.push({ key: `empty-${i}`, dayNum: 0, isCurrentMonth: false, heatLevel: 0, isToday: false, isSelected: false })
     }
 
-    // Days in current month
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(viewDate.year, viewDate.month, day)
       const k = dateKey(d)
-
-      // Heat level computation:
-      // 0 completed: level 0 (transparent)
-      // some completed but under 50%: level 1 (lightest orange ~20%)
-      // 50% to under 100%: level 2 (medium orange ~50%)
-      // 100% completed: level 3 (full orange ~100%)
       const scheduledTasks = tasks.filter((t) => isScheduledOn(t, k))
-      let heatLevel: 0 | 1 | 2 | 3 = 0
 
+      let heatLevel: 0 | 1 | 2 | 3 = 0
       if (scheduledTasks.length > 0) {
         const completedCount = scheduledTasks.filter((t) => isCompletedOn(t, k)).length
-        if (completedCount === 0) {
-          heatLevel = 0
-        } else {
+        if (completedCount > 0) {
           const ratio = completedCount / scheduledTasks.length
-          if (ratio === 1) {
-            heatLevel = 3
-          } else if (ratio >= 0.5) {
-            heatLevel = 2
-          } else {
-            heatLevel = 1
-          }
+          heatLevel = ratio === 1 ? 3 : ratio >= 0.5 ? 2 : 1
         }
       }
 
       cells.push({
-        dateKeyString: k,
+        key: k,
         dayNum: day,
         isCurrentMonth: true,
         heatLevel,
@@ -123,8 +114,20 @@ export function CalendarHeatmapPopover({
   }, [viewDate, tasks, today, selectedDate])
 
   return (
-    <div className="popover-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="popover-card" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="popover-backdrop"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Select date"
+    >
+      <div
+        ref={cardRef}
+        className="popover-card"
+        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+      >
+        {/* Month navigation */}
         <div className="popover-header">
           <button
             type="button"
@@ -145,22 +148,19 @@ export function CalendarHeatmapPopover({
           </button>
         </div>
 
+        {/* Weekday headers */}
         <div className="calendar-grid-header">
-          <span>M</span>
-          <span>T</span>
-          <span>W</span>
-          <span>T</span>
-          <span>F</span>
-          <span>S</span>
-          <span>S</span>
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+            <span key={i}>{d}</span>
+          ))}
         </div>
 
+        {/* Day grid */}
         <div className="calendar-grid">
           {calendarDays.map((cell) => {
             if (!cell.isCurrentMonth) {
-              return <div key={cell.dateKeyString} className="cal-cell empty" />
+              return <div key={cell.key} className="cal-cell empty" />
             }
-
             const classes = [
               'cal-cell',
               `heat-${cell.heatLevel}`,
@@ -172,14 +172,12 @@ export function CalendarHeatmapPopover({
 
             return (
               <button
-                key={cell.dateKeyString}
+                key={cell.key}
                 type="button"
                 className={classes}
-                onClick={() => {
-                  onSelectDate(cell.dateKeyString)
-                  onClose()
-                }}
-                aria-label={`${cell.dateKeyString}${cell.isToday ? ' (Today)' : ''}`}
+                onClick={() => { onSelectDate(cell.key); onClose() }}
+                aria-label={`${cell.key}${cell.isToday ? ' (Today)' : ''}`}
+                aria-pressed={cell.isSelected}
               >
                 <span>{cell.dayNum}</span>
               </button>
@@ -187,11 +185,12 @@ export function CalendarHeatmapPopover({
           })}
         </div>
 
+        {/* Legend */}
         <div className="calendar-legend">
           <span className="legend-label">Less</span>
           <div className="cal-cell-sample heat-0" title="0%" />
           <div className="cal-cell-sample heat-1" title="< 50%" />
-          <div className="cal-cell-sample heat-2" title="50% - 99%" />
+          <div className="cal-cell-sample heat-2" title="50–99%" />
           <div className="cal-cell-sample heat-3" title="100%" />
           <span className="legend-label">More</span>
         </div>

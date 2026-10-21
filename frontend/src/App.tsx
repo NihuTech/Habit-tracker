@@ -18,6 +18,7 @@ import {
 } from './api'
 import type { SessionUser } from './api'
 import { AuthPage } from './AuthPage'
+import { CalendarHeatmapPopover } from './CalendarHeatmapPopover'
 import { RecoveryPrompt } from './RecoveryPrompt'
 import {
   addDays,
@@ -70,6 +71,7 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
 
   // ── Auth state ───────────────────────────────────────────────────────────
   const [authChecking, setAuthChecking] = useState(true)
@@ -516,23 +518,30 @@ function App() {
         <div className="date-nav">
           <button
             type="button"
-            className="icon-btn"
-            onClick={() => setViewDate(addDays(viewDate, -1))}
-            aria-label="Previous day"
+            className="date-chip date-chip-btn"
+            onClick={() => setIsCalendarOpen((prev) => !prev)}
+            aria-label="Choose date"
+            aria-haspopup="dialog"
+            aria-expanded={isCalendarOpen}
           >
-            ‹
-          </button>
-          <p className="date-chip">
-            {formatLongDate(parseDateKey(viewDate))}
-            {viewDate === realToday ? ' · Today' : ''}
-          </p>
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={() => setViewDate(addDays(viewDate, 1))}
-            aria-label="Next day"
-          >
-            ›
+            <span>
+              {formatLongDate(parseDateKey(viewDate))}
+              {viewDate === realToday ? ' · Today' : ''}
+            </span>
+            <svg
+              className="chevron-icon"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
           </button>
           {viewDate !== realToday ? (
             <button type="button" className="ghost-btn" onClick={() => setViewDate(realToday)}>
@@ -547,6 +556,19 @@ function App() {
           </div>
         </div>
       </header>
+
+      {isCalendarOpen ? (
+        <CalendarHeatmapPopover
+          selectedDate={viewDate}
+          today={realToday}
+          tasks={tasks}
+          onSelectDate={(date) => {
+            setViewDate(date)
+            setIsCalendarOpen(false)
+          }}
+          onClose={() => setIsCalendarOpen(false)}
+        />
+      ) : null}
 
       <main className="layout">
         <section>
