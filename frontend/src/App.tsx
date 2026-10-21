@@ -146,10 +146,14 @@ function App() {
     if (currentUser) void fetchTasks()
   }, [fetchTasks, currentUser])
 
-  const now = new Date()
-  const hour = now.getHours()
-  const greeting =
-    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const sectionTitle =
+    viewDate === realToday
+      ? 'Today'
+      : new Intl.DateTimeFormat('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        }).format(parseDateKey(viewDate))
 
   const visibleTasks = useMemo(
     () => tasks.filter((task) => isScheduledOn(task, viewDate)),
@@ -573,14 +577,7 @@ function App() {
       <main className="layout">
         <section>
           <article className="card hero-card">
-            <p className="eyebrow">
-              {viewDate === realToday ? "Today's Tasks" : 'Scheduled tasks'}
-            </p>
-            <h2 className="welcome">{greeting} — let's keep your streak glowing.</h2>
-            <p className="welcome-copy">
-              Check off what you finish, add anything that matters today, and use the timer
-              when you want a focused block of time.
-            </p>
+            <h2>{sectionTitle}</h2>
             <div className="progress-wrap">
               <div className="progress-meta">
                 <span>Daily progress</span>
@@ -776,7 +773,23 @@ function App() {
         <aside className="side-stack">
           <article className="card side-card">
             <p className="eyebrow">Streak</p>
-            <p className="stat-number">{streak.count}</p>
+            <p className="stat-number">
+              <svg
+                className="streak-flame"
+                width="1em"
+                height="1em"
+                viewBox="0 0 24 24"
+                fill={streak.count > 0 ? '#f97316' : '#9ca3af'}
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M12.963 2.286a.75.75 0 0 0-1.071-.136 9.742 9.742 0 0 0-3.539 6.177A7.547 7.547 0 0 1 6.648 6.61a.75.75 0 0 0-1.152-.082A9 9 0 1 0 15.68 4.534a7.46 7.46 0 0 1-2.717-2.248zM15.75 14.25a3.75 3.75 0 1 1-7.313-1.172c.628.465 1.35.81 2.133 1a5.99 5.99 0 0 1 1.925-3.545 3.75 3.75 0 0 1 3.255 3.717z"
+                />
+              </svg>
+              <span>{streak.count}</span>
+            </p>
             <p className="streak-note">
               {allDone
                 ? 'Beautiful work. Today is complete.'
