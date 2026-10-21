@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import './App.css'
+import './auth.css'
 import {
+  authLogout,
+  authMe,
+  clearSession,
   createHabit,
   deleteHabit,
   getHabits,
+  getSession,
   recordCompletion,
   recordRecovery,
+  registerOn401Handler,
   removeCompletion,
+  setSession,
   updateHabit,
 } from './api'
+import type { SessionUser } from './api'
+import { AuthPage } from './AuthPage'
 import { RecoveryPrompt } from './RecoveryPrompt'
 import {
   addDays,
@@ -61,6 +70,48 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
+
+  // ── Auth state ───────────────────────────────────────────────────────────
+  const [authChecking, setAuthChecking] = useState(true)
+  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null)
+
+  function handleAuthenticated(user: SessionUser, token: string) {
+    setSession(user, token)
+    setCurrentUser(user)
+  }
+
+  function handleLogout() {
+    void authLogout().finally(() => {
+      clearSession()
+      setCurrentUser(null)
+      setTasks([])
+    })
+  }
+
+  // Verify stored session on mount
+  useEffect(() => {
+    registerOn401Handler(() => {
+      clearSession()
+      setCurrentUser(null)
+      setTasks([])
+    })
+    const stored = getSession()
+    if (!stored) {
+      setAuthChecking(false)
+      return
+    }
+    authMe()
+      .then((user) => {
+        setCurrentUser(user)
+      })
+      .catch(() => {
+        clearSession()
+        setCurrentUser(null)
+      })
+      .finally(() => {
+        setAuthChecking(false)
+      })
+  }, [])
   const [streak, setStreak] = useState(loadStreak)
   const [reminders, setReminders] = useState<Reminder[]>(loadReminders)
   const [reminderBanner, setReminderBanner] = useState('')
@@ -88,9 +139,10 @@ function App() {
     }
   }, [])
 
+  // Only fetch habits once the user is confirmed logged in
   useEffect(() => {
-    void fetchTasks()
-  }, [fetchTasks])
+    if (currentUser) void fetchTasks()
+  }, [fetchTasks, currentUser])
 
   const now = new Date()
   const hour = now.getHours()
@@ -413,6 +465,14 @@ function App() {
       ? taskToDraft(editingTask)
       : emptyDraft(realToday)
 
+  // ── Auth gate ────────────────────────────────────────────────────────────
+  if (authChecking) {
+    return <div className="auth-loading">Loading…</div>
+  }
+  if (!currentUser) {
+    return <AuthPage onAuthenticated={handleAuthenticated} />
+  }
+
   return (
     <div className="app-shell">
       {errorMessage ? (
@@ -479,6 +539,12 @@ function App() {
               Today
             </button>
           ) : null}
+          <div className="header-user">
+            <span className="header-user-name">{currentUser.name}</span>
+            <button type="button" className="logout-btn" onClick={handleLogout}>
+              Log out
+            </button>
+          </div>
         </div>
       </header>
 
