@@ -1,22 +1,26 @@
+
 .app-shell {
   min-height: 100svh;
   background: var(--bg);
+  color: var(--text);
   padding: 24px 20px 48px;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .app-header {
   max-width: 1120px;
-  margin: 0 auto 24px;
+  margin: 0 auto 20px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .brand-mark {
@@ -51,6 +55,7 @@
 .date-nav {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -77,11 +82,121 @@
   transform: rotate(180deg);
 }
 
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-user-name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.logout-btn {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 9px 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  border-color: var(--accent);
+}
+
+.theme-toggle {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.theme-toggle:focus-visible,
+.tab-button:focus-visible,
+.logout-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Dashboard navigation tabs */
+.dashboard-tabs {
+  max-width: 1120px;
+  margin: 0 auto 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tab-button {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.tab-button:hover {
+  border-color: var(--accent);
+}
+
+.tab-button.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+/* Simple content for the additional tabs */
+.tab-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-bottom: 30px;
+}
+
+.tab-placeholder {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: var(--shadow);
+}
+
+.tab-placeholder h2 {
+  margin: 8px 0 14px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tab-placeholder p:not(.eyebrow) {
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
 /* Calendar Heatmap Popover */
 .popover-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(47, 40, 80, 0.4);
+  background: var(--popover-backdrop);
   backdrop-filter: blur(2px);
   z-index: 1000;
   display: flex;
@@ -106,6 +221,7 @@
     align-items: flex-end;
     padding: 0;
   }
+
   .popover-card {
     max-width: 100%;
     border-bottom-left-radius: 0;
@@ -200,7 +316,7 @@
   border-radius: 3px;
 }
 
-/* Day colors: Orange used ONLY for these day squares */
+/* Day colors */
 .heat-0 {
   background: var(--heat-0);
   border: 1px solid var(--border);
@@ -225,7 +341,6 @@
   color: #ffffff;
 }
 
-/* Today gets an outline ring, selected day a darker ring */
 .cal-cell.today {
   box-shadow: 0 0 0 2px var(--accent);
 }
@@ -253,6 +368,7 @@
   margin: 0 2px;
 }
 
+/* Main dashboard layout */
 .layout {
   max-width: 1120px;
   margin: 0 auto;
@@ -498,7 +614,7 @@
   gap: 8px;
 }
 
-/* Consistent Form Controls System */
+/* Form controls */
 input[type='text'],
 input[type='email'],
 input[type='password'],
@@ -535,14 +651,14 @@ textarea {
 
 input[type='date'],
 input[type='number'] {
-  color-scheme: light;
+  color-scheme: inherit;
 }
 
 select {
   appearance: none;
   -webkit-appearance: none;
   padding-right: 38px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a7196' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: var(--select-arrow);
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 16px 16px;
@@ -696,14 +812,20 @@ textarea:disabled {
   font-weight: 400;
 }
 
+/* Responsive layout */
 @media (max-width: 900px) {
-  .layout,
   .app-header {
-    grid-template-columns: 1fr;
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .app-header {
-    flex-direction: column;
+  .date-nav {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
   }
 
   .welcome {
@@ -721,6 +843,40 @@ textarea:disabled {
     padding: 16px 12px 36px;
   }
 
+  .app-header {
+    gap: 16px;
+  }
+
+  .brand h1 {
+    font-size: 1.25rem;
+  }
+
+  .date-nav {
+    gap: 8px;
+  }
+
+  .header-user {
+    flex-wrap: wrap;
+  }
+
+  .dashboard-tabs {
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .tab-button {
+    padding: 9px 12px;
+    font-size: 0.88rem;
+  }
+
+  .tab-page {
+    padding-bottom: 20px;
+  }
+
+  .tab-placeholder {
+    padding: 20px;
+  }
+
   .hero-card,
   .tasks-card,
   .side-card {
@@ -734,6 +890,7 @@ textarea:disabled {
   .task-actions {
     grid-column: 2;
     flex-direction: row;
+    flex-wrap: wrap;
   }
 
   .form-grid-2 {

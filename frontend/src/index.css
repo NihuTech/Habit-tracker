@@ -1,5 +1,5 @@
 :root {
-  /* Color Variables */
+  /* Color Variables (Light Theme - Default) */
   --bg: #f7f5fb;
   --surface: #ffffff;
   --surface-2: #f0eaf8;
@@ -32,11 +32,16 @@
   --card: var(--surface);
   --success: #3dba8b;
 
-  /* Soft subtle shadow (no large blurry purple glows) */
+  /* Subtle shadow */
   --shadow: 0 1px 3px rgba(47, 40, 80, 0.05), 0 1px 2px rgba(47, 40, 80, 0.03);
+  --popover-backdrop: rgba(47, 40, 80, 0.4);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237a7196' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 
-  /* Typography */
-  --font-sans: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
+  color-scheme: light;
+
+  /* Typography: Stack Sans */
+  --font-sans: 'Stack Sans Text Variable', 'Stack Sans Text', 'Stack Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-headline: 'Stack Sans Headline Variable', 'Stack Sans Headline', 'Stack Sans', var(--font-sans);
 
   font-family: var(--font-sans);
   font-size: 16px;
@@ -46,6 +51,51 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+[data-theme='dark'] {
+  /* Color Variables (Dark Theme) */
+  --bg: #12101e;
+  --surface: #1b172a;
+  --surface-2: #242038;
+  --text: #f3f0fa;
+  --text-muted: #9e97ba;
+  --border: #332c4d;
+  --accent: #8b7cf8;
+  --accent-hover: #9f92fa;
+  --accent-subtle: #272142;
+  --accent-contrast: #ffffff;
+  --danger: #f87171;
+  --danger-bg: #2d161d;
+  --danger-border: #5e242c;
+
+  /* Calendar Heat Levels in Dark Mode */
+  --heat-0: rgba(255, 255, 255, 0.04);
+  --heat-1: rgba(249, 115, 22, 0.35);
+  --heat-2: rgba(249, 115, 22, 0.7);
+  --heat-3: #f97316;
+
+  /* Aliases for backwards compatibility */
+  --lavender-50: var(--bg);
+  --lavender-100: var(--surface-2);
+  --lavender-200: #352c50;
+  --lavender-400: #8b7cf8;
+  --lavender-500: var(--accent);
+  --lavender-600: var(--accent-hover);
+  --ink: var(--text);
+  --muted: var(--text-muted);
+  --card: var(--surface);
+  --success: #34d399;
+
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --popover-backdrop: rgba(0, 0, 0, 0.7);
+  --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239e97ba' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+
+  color-scheme: dark;
+}
+
+[data-theme='dark'] .heat-2 {
+  color: #ffedd5;
 }
 
 *,
@@ -66,6 +116,7 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-weight: 400;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {
@@ -76,7 +127,7 @@ button,
 input,
 select,
 textarea {
-  font-family: inherit;
+  font-family: var(--font-sans);
   font-size: inherit;
   color: inherit;
 }
@@ -88,6 +139,14 @@ button {
 h1,
 h2,
 h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-family: var(--font-headline);
+  color: var(--text);
+}
+
 p {
   margin: 0;
 }
